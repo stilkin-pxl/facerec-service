@@ -37,10 +37,10 @@ def favicon_route():
 
 @app.route('/api/add_face', methods=['POST'])
 def add_face_route():
+    print('adding face')  # debug
     json_body = request.get_json()
     if KEY_PERSON in json_body and KEY_IMG in json_body:
         person_id = json_body[KEY_PERSON]
-        print('person_id: ' + str(person_id))  # debug
         img_str = json_body[KEY_IMG]
         return add_face(person_id, img_str)
     else:
@@ -49,6 +49,7 @@ def add_face_route():
 
 @app.route('/api/predict', methods=['POST'])
 def predict_route():
+    print('predicting face')  # debug
     json_body = request.get_json()
     if KEY_IMG in json_body:
         img_str = json_body[KEY_IMG]
@@ -68,7 +69,6 @@ def add_face(person_id, img_str):
 
         encodings = face_recognition.face_encodings(img_arr)
         face_count = len(encodings)
-        print(str(face_count) + ' faces found')
 
         if face_count < 1:
             return jsonify({CONST_ERROR: 'Face not found'})
@@ -82,6 +82,7 @@ def add_face(person_id, img_str):
             fio = open(enc_file, "w")
             fio.write(json.dumps(encoding))
             fio.close()
+            print('encoding_id: ' + file_name)  # debug
             return jsonify({'encoding_id': file_name})
     except Exception as e:
         print('ERROR: ' + str(e))
@@ -97,7 +98,6 @@ def predict(img_str):
 
         encodings = face_recognition.face_encodings(img_arr)
         face_count = len(encodings)
-        print(str(face_count) + ' faces found')
 
         if face_count < 1:
             return jsonify({CONST_ERROR: 'Face not found'})
@@ -109,7 +109,7 @@ def predict(img_str):
             known_encodings = load_encodings(ENC_FOLDER)
             known_face_encodings = list(known_encodings.values())
             known_face_labels = list(known_encodings.keys())
-            print(known_face_labels)
+            print('checking ' + str(len(known_face_labels)) + ' known faces')  # debug
 
             results = face_recognition.compare_faces(known_face_encodings, unknown_face_encoding)
             ids = []
@@ -132,7 +132,6 @@ def load_encodings(encoding_path):
     enc_files = get_filelist(encoding_path, [ENC_FILE])
 
     for filename in enc_files:
-        print(filename)
         f = open(filename, "r")
         contents = f.read()
         f.close()
@@ -170,4 +169,4 @@ def get_filelist(path, extensions):
 if __name__ == '__main__':
     if not os.path.exists(ENC_FOLDER):  # fix missing folders
         os.makedirs(ENC_FOLDER)
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', debug=False)
