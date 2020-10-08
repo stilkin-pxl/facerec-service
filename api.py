@@ -57,17 +57,11 @@ def predict_route():
 def process_request(post_req):
     route = str(post_req.url_rule)
     json_body = post_req.get_json()
-    if KEY_IMG in json_body:
-        img_str = json_body[KEY_IMG]
-        if 'predict' in route:
-            return predict(img_str)
-        else:
-            return add_face(img_str)
-    else:
+
+    if KEY_IMG not in json_body:
         return jsonify({CONST_ERROR: 'Incomplete request body'})
 
-
-def add_face(img_str):
+    img_str = json_body[KEY_IMG]
     try:
         img_bytes = base64.b64decode(str(img_str))
         img = Image.open(io.BytesIO(img_bytes))
@@ -82,51 +76,48 @@ def add_face(img_str):
         elif face_count > 1:
             return jsonify({CONST_ERROR: 'Too many faces in image'})
         else:
-            encoding = encodings[0].tolist()
-            id_str = str(uuid.uuid4()).encode('utf-8')
-            file_name = base64.urlsafe_b64encode(id_str).decode('ascii')
-            enc_file = os.path.join(ENC_FOLDER, file_name + '.enc')
-            fio = open(enc_file, "w")
-            fio.write(json.dumps(encoding))
-            fio.close()
-            print('encoding_id: ' + file_name)  # debug
-            return jsonify({KEY_ID: file_name})
+            if 'predict' in route:
+                return predict(encodings)
+            else:
+                return add_face(encodings)
     except Exception as e:
         print('ERROR: ' + str(e))
         return jsonify({CONST_ERROR: str(e)})
 
 
-def predict(img_str):
+def add_face(encodings):
     try:
-        img_bytes = base64.b64decode(str(img_str))
-        img = Image.open(io.BytesIO(img_bytes))
-        img = img.convert('RGB')
-        img_arr = np.array(img)
+        encoding = encodings[0].tolist()
+        id_str = str(uuid.uuid4()).encode('utf-8')
+        file_name = base64.urlsafe_b64encode(id_str).decode('ascii')
+        enc_file = os.path.join(ENC_FOLDER, file_name + '.enc')
+        fio = open(enc_file, "w")
+        fio.write(json.dumps(encoding))
+        fio.close()
+        print('encoding_id: ' + file_name)  # debug
+        return jsonify({KEY_ID: file_name})
+    except Exception as e:
+        print('ERROR: ' + str(e))
+        return jsonify({CONST_ERROR: str(e)})
 
-        encodings = face_recognition.face_encodings(img_arr)
-        face_count = len(encodings)
 
-        if face_count < 1:
-            return jsonify({CONST_ERROR: 'Face not found'})
-        elif face_count > 1:
-            return jsonify({CONST_ERROR: 'Too many faces in image'})
-        else:
-            unknown_face_encoding = encodings[0]
-            # load encodings from file (/ db?)
-            known_encodings = load_encodings(ENC_FOLDER)
-            known_face_encodings = list(known_encodings.values())
-            known_face_labels = list(known_encodings.keys())
-            print('checking ' + str(len(known_face_labels)) + ' known faces')  # debug
+def predict(encodings):
+    try:
+        unknown_face_encoding = encodings[0]
+        # load encodings from file (/ db?)
+        known_encodings = load_encodings(ENC_FOLDER)
+        known_face_encodings = list(known_encodings.values())
+        known_face_labels = list(known_encodings.keys())
+        print('checking ' + str(len(known_face_labels)) + ' known faces')  # debug
 
-            results = face_recognition.compare_faces(known_face_encodings, unknown_face_encoding)
-            ids = []
-            for idx in range(len(results)):
-                if results[idx]:
-                    label = known_face_labels[idx].replace(ENC_FILE, '')
-                    ids.append({KEY_ID: label})
+        results = face_recognition.compare_faces(known_face_encodings, unknown_face_encoding)
+        ids = []
+        for idx in range(len(results)):
+            if results[idx]:
+                label = known_face_labels[idx].replace(ENC_FILE, '')
+                ids.append({KEY_ID: label})
 
-            return jsonify(ids)
-
+        return jsonify(ids)
     except Exception as e:
         print('ERROR: ' + str(e))
         return jsonify({CONST_ERROR: str(e)})
