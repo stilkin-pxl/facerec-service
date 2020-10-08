@@ -76,7 +76,7 @@ def process_request(post_req):
         elif face_count > 1:
             return jsonify({CONST_ERROR: 'Too many faces in image'})
         else:
-            if 'predict' in route:
+            if ROUTE_PREDICT is route:
                 return predict(encodings)
             else:
                 return add_face(encodings)
