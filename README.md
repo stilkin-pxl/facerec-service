@@ -20,7 +20,6 @@ Request body:
 (the image should be base64 encoded)
 ```json
 {
-	"person_id": 1234,
 	"image": "A96SaAKHH8Ukc16XJe4p5w=="
 }
 ```
@@ -28,7 +27,7 @@ Request body:
 Response body success:
 ```json
 {
-	"encoding_id": 3456
+	"identifier": 3456
 }
 ```
 
@@ -45,8 +44,9 @@ Response body success:
 (you will get a list with all matching ids)
 ```json
 [{
-	"person_id": 1234,
-	"encoding_id": 3456
+	"identifier": "MmQyYzdhY2UtYzExMC00NjI3LWJkNDQtODQ4OTNiNjgyOTBi"
+}, {
+	"identifier": "MzM1MmM1MDctODM0OC00NDk3LTg5ZWMtOWVlMTFkNzk0MDEx"
 }]
 ```
 
