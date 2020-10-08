@@ -16,24 +16,23 @@ This will expose two **POST** routes both expecting JSON bodies:
 * */api/predict*
 
 ### add_face
-Request body:  
+**Request body**:  
 (the image should be base64 encoded)
 ```json
 {
-	"person_id": 1234,
 	"image": "A96SaAKHH8Ukc16XJe4p5w=="
 }
 ```
 
-Response body success:
+**Response body success**: you get a unique identifier for the image you added
 ```json
 {
-	"encoding_id": 3456
+	"identifier": "MzM1MmM1MDctODM0OC00NDk3LTg5ZWMtOWVlMTFkNzk0MDEx"
 }
 ```
 
 ### predict
-Request body:  
+**Request body**:  
 (the image should be base64 encoded)
 ```json
 {
@@ -41,17 +40,17 @@ Request body:
 }
 ```
 
-Response body success:  
-(you will get a list with all matching ids)
+**Response body success**: you will get a list with all matching identifiers
 ```json
 [{
-	"person_id": 1234,
-	"encoding_id": 3456
+	"identifier": "MmQyYzdhY2UtYzExMC00NjI3LWJkNDQtODQ4OTNiNjgyOTBi"
+}, {
+	"identifier": "MzM1MmM1MDctODM0OC00NDk3LTg5ZWMtOWVlMTFkNzk0MDEx"
 }]
 ```
 
 ### errors
-Response body error:
+**Response body error**:
 ```json
 {
 	"error": "Face not found"
