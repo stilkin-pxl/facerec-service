@@ -2,25 +2,29 @@
 # https://flask.palletsprojects.com/en/1.1.x/quickstart/
 
 import base64
-import face_recognition
 import io
 import json
-import numpy as np
 import os
+import uuid
+
+import face_recognition
+import numpy as np
 from PIL import Image
-from flask import Flask, jsonify, request, redirect, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 
 # constants
-CONST_ERROR = 'error'
-KEY_PERSON = 'person_id'
-KEY_IMG = 'image'
 ENC_FOLDER = 'encodings'
 ENC_FILE = '.enc'
+CONST_ERROR = 'error'
+KEY_IMG = 'image'
+KEY_ID = 'identifier'
+ROUTE_ADD = '/api/add_face'
+ROUTE_PREDICT = '/api/predict'
 
 app = Flask(__name__)
 
+# -- ROUTES -- #
 
-### ROUTES ###
 
 @app.route('/')
 def index_route():
@@ -35,32 +39,35 @@ def favicon_route():
         mimetype='image/vnd.microsoft.icon')
 
 
-@app.route('/api/add_face', methods=['POST'])
+@app.route(ROUTE_ADD, methods=['POST'])
 def add_face_route():
     print('adding face')  # debug
-    json_body = request.get_json()
-    if KEY_PERSON in json_body and KEY_IMG in json_body:
-        person_id = json_body[KEY_PERSON]
-        img_str = json_body[KEY_IMG]
-        return add_face(person_id, img_str)
-    else:
-        return jsonify({CONST_ERROR: 'Incomplete request body'})
+    return process_request(request)
 
 
 @app.route('/api/predict', methods=['POST'])
 def predict_route():
     print('predicting face')  # debug
-    json_body = request.get_json()
+    return process_request(request)
+
+
+# -- METHODS -- #
+
+
+def process_request(post_req):
+    route = str(post_req.url_rule)
+    json_body = post_req.get_json()
     if KEY_IMG in json_body:
         img_str = json_body[KEY_IMG]
-        return predict(img_str)
+        if 'predict' in route:
+            return predict(img_str)
+        else:
+            return add_face(img_str)
     else:
         return jsonify({CONST_ERROR: 'Incomplete request body'})
 
 
-### METHODS ###
-
-def add_face(person_id, img_str):
+def add_face(img_str):
     try:
         img_bytes = base64.b64decode(str(img_str))
         img = Image.open(io.BytesIO(img_bytes))
@@ -76,14 +83,14 @@ def add_face(person_id, img_str):
             return jsonify({CONST_ERROR: 'Too many faces in image'})
         else:
             encoding = encodings[0].tolist()
-            id_str = (str(person_id)).encode('utf-8')
+            id_str = str(uuid.uuid4()).encode('utf-8')
             file_name = base64.urlsafe_b64encode(id_str).decode('ascii')
             enc_file = os.path.join(ENC_FOLDER, file_name + '.enc')
             fio = open(enc_file, "w")
             fio.write(json.dumps(encoding))
             fio.close()
             print('encoding_id: ' + file_name)  # debug
-            return jsonify({'encoding_id': file_name})
+            return jsonify({KEY_ID: file_name})
     except Exception as e:
         print('ERROR: ' + str(e))
         return jsonify({CONST_ERROR: str(e)})
@@ -116,8 +123,7 @@ def predict(img_str):
             for idx in range(len(results)):
                 if results[idx]:
                     label = known_face_labels[idx].replace(ENC_FILE, '')
-                    person_id = base64.urlsafe_b64decode(label).decode('ascii')
-                    ids.append({'person_id': person_id, 'encoding_id': label})
+                    ids.append({KEY_ID: label})
 
             return jsonify(ids)
 
@@ -164,9 +170,10 @@ def get_filelist(path, extensions):
     return filenames
 
 
-### ENTRY POINT ###
+# -- ENTRY POINT -- #
 
 if __name__ == '__main__':
     if not os.path.exists(ENC_FOLDER):  # fix missing folders
         os.makedirs(ENC_FOLDER)
-    app.run(host='0.0.0.0', debug=False)
+    app.run(host='0.0.0.0', debug=True)
+    # app.run(host='0.0.0.0', ssl_context='adhoc', port='443', debug=False) # for https
