@@ -32,23 +32,22 @@ def favicon_route():
 @app.route(const.ROUTE_ADD, methods=['POST'])
 def add_face_route():
     print('adding face')  # debug
-    json_body = request.get_json()
 
+    json_body = request.get_json()
     if const.KEY_IMG not in json_body:
-        return jsonify({const.KEY_ERROR: 'Incomplete request body'})
+        return jsonify({const.KEY_ERROR: const.MSG_INCOMPLETE})
 
     io_stream = string_to_stream(json_body[const.KEY_IMG])
-
     return jsonify(func.add_face(io_stream))
 
 
 @app.route(const.ROUTE_PREDICT, methods=['POST'])
 def predict_route():
     print('predicting face')  # debug
-    json_body = request.get_json()
 
+    json_body = request.get_json()
     if const.KEY_IMG not in json_body:
-        return jsonify({const.KEY_ERROR: 'Incomplete request body'})
+        return jsonify({const.KEY_ERROR: const.MSG_INCOMPLETE})
 
     io_stream = string_to_stream(json_body[const.KEY_IMG])
     return jsonify(func.predict(io_stream))
@@ -57,10 +56,10 @@ def predict_route():
 @app.route(const.ROUTE_REMOVE, methods=['POST'])
 def remove_route():
     print('removing face')  # debug
+    
     json_body = request.get_json()
-
     if const.KEY_ID not in json_body:
-        return jsonify({const.KEY_ERROR: 'Incomplete request body'})
+        return jsonify({const.KEY_ERROR: const.MSG_INCOMPLETE})
 
     identifier = json_body[const.KEY_ID]
     return jsonify(func.remove(identifier))

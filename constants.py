@@ -10,6 +10,11 @@ KEY_IMG = 'image'
 KEY_ID = 'identifier'
 KEY_ERROR = 'error'
 
+# messages
+MSG_INCOMPLETE = 'Incomplete request body'
+MSG_FNF = 'Face not found'
+MSG_TOO_MANY = 'Too many faces in image'
+
 # file paths
 ENC_FOLDER = 'encodings'
 ENC_FILE = '.enc'

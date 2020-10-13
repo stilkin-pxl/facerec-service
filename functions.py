@@ -70,8 +70,8 @@ def get_encodings(io_stream):
 
 def check_face_count(face_count):
     if face_count < 1:
-        return {const.KEY_ERROR: 'Face not found'}
+        return {const.KEY_ERROR: const.MSG_FNF}
     elif face_count > 1:
-        return {const.KEY_ERROR: 'Too many faces in image'}
+        return {const.KEY_ERROR: const.MSG_TOO_MANY}
     else:
         return {}
