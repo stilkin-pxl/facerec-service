@@ -1,6 +1,8 @@
 # https://github.com/ageitgey/face_recognition/blob/master/examples/web_service_example.py
 # https://flask.palletsprojects.com/en/1.1.x/quickstart/
 
+import base64
+import io
 import os
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -30,19 +32,45 @@ def favicon_route():
 @app.route(const.ROUTE_ADD, methods=['POST'])
 def add_face_route():
     print('adding face')  # debug
-    return func.process_request(request)
+    json_body = request.get_json()
+
+    if const.KEY_IMG not in json_body:
+        return jsonify({const.ERROR_MSG: 'Incomplete request body'})
+
+    io_stream = string_to_stream(json_body[const.KEY_IMG])
+
+    return jsonify(func.add_face(io_stream))
 
 
 @app.route(const.ROUTE_PREDICT, methods=['POST'])
 def predict_route():
     print('predicting face')  # debug
-    return func.process_request(request)
+    json_body = request.get_json()
+
+    if const.KEY_IMG not in json_body:
+        return jsonify({const.ERROR_MSG: 'Incomplete request body'})
+
+    io_stream = string_to_stream(json_body[const.KEY_IMG])
+    return jsonify(func.predict(io_stream))
 
 
 @app.route(const.ROUTE_REMOVE, methods=['POST'])
 def remove_route():
     print('removing face')  # debug
-    return func.remove(request)
+    json_body = request.get_json()
+
+    if const.KEY_ID not in json_body:
+        return jsonify({const.ERROR_MSG: 'Incomplete request body'})
+
+    identifier = json_body[const.KEY_ID]
+    return jsonify(func.remove(identifier))
+
+
+# -- UTILITY METHODS -- #
+
+def string_to_stream(img_str):
+    img_bytes = base64.b64decode(str(img_str))
+    return io.BytesIO(img_bytes)
 
 
 # -- ENTRY POINT -- #

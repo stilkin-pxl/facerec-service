@@ -3,7 +3,6 @@ import json
 import os
 
 import numpy as np
-from flask import jsonify
 
 import constants as const
 
@@ -18,7 +17,7 @@ def store_encoding(identifier, encoding):
     fio.write(json.dumps(encoding))
     fio.close()
     print('encoding_id: ' + file_name)  # debug
-    return jsonify({const.KEY_ID: file_name})
+    return {const.KEY_ID: file_name}
 
 
 def load_encodings():
@@ -57,6 +56,6 @@ def remove_encoding(identifier):
     enc_file = os.path.join(const.ENC_FOLDER, identifier + '.enc')
     if os.path.exists(enc_file):
         os.remove(enc_file)
-        return jsonify({const.KEY_ID: identifier})  # ok
+        return {const.KEY_ID: identifier}  # ok
     else:
-        return jsonify({const.ERROR_MSG: 'File not found'})
+        return {const.ERROR_MSG: 'File not found'}
