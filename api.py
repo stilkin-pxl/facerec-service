@@ -53,9 +53,9 @@ def predict_route():
 
 
 @app.route('/api/remove', methods=['POST'])
-def remove():
+def remove_route():
     print('removing face')  # debug
-    return remove_face(request)
+    return remove(request)
 
 
 # -- FUNCTIONS -- #
@@ -130,7 +130,7 @@ def predict(encodings):
         return jsonify({CONST_ERROR: str(e)})
 
 
-def remove_face(post_req):
+def remove(post_req):
     json_body = post_req.get_json()
 
     if KEY_ID not in json_body:
