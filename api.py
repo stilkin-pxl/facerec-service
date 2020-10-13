@@ -95,14 +95,8 @@ def process_request(post_req):
 def add_face(encodings):
     try:
         encoding = encodings[0].tolist()
-        id_str = str(uuid.uuid4()).encode('utf-8')
-        file_name = base64.urlsafe_b64encode(id_str).decode('ascii')
-        enc_file = os.path.join(ENC_FOLDER, file_name + '.enc')
-        fio = open(enc_file, "w")
-        fio.write(json.dumps(encoding))
-        fio.close()
-        print('encoding_id: ' + file_name)  # debug
-        return jsonify({KEY_ID: file_name})
+        identifier = str(uuid.uuid4()).encode('utf-8')
+        return store_encoding(identifier, encoding)
     except Exception as e:
         print('ERROR: ' + str(e))
         return jsonify({CONST_ERROR: str(e)})
@@ -111,8 +105,7 @@ def add_face(encodings):
 def predict(encodings):
     try:
         unknown_face_encoding = encodings[0]
-        # load encodings from file (/ db?)
-        known_encodings = load_encodings(ENC_FOLDER)
+        known_encodings = load_encodings()  # load encodings from file (/ db?)
         known_face_encodings = list(known_encodings.values())
         known_face_labels = list(known_encodings.keys())
         print('checking ' + str(len(known_face_labels)) + ' known faces')  # debug
@@ -136,27 +129,46 @@ def remove(post_req):
     if KEY_ID not in json_body:
         return jsonify({CONST_ERROR: 'Incomplete request body'})
 
-    file_id = json_body[KEY_ID]
+    identifier = json_body[KEY_ID]
 
     try:
-        enc_file = os.path.join(ENC_FOLDER, file_id + '.enc')
-        if os.path.exists(enc_file):
-            os.remove(enc_file)
-            return jsonify({KEY_ID: file_id})  # ok
-        else:
-            return jsonify({CONST_ERROR: 'File not found'})
+        return remove_encoding(identifier)
     except Exception as e:
         print('ERROR: ' + str(e))
         return jsonify({CONST_ERROR: str(e)})
 
-# -- UTILITY METHODS -- #
+
+# -- IO METHODS -- #
 
 
-def load_encodings(encoding_path):
+def store_encoding(identifier, encoding):
+    file_name = base64.urlsafe_b64encode(identifier).decode('ascii')
+    enc_file = os.path.join(ENC_FOLDER, file_name + '.enc')
+    fio = open(enc_file, "w")
+    fio.write(json.dumps(encoding))
+    fio.close()
+    print('encoding_id: ' + file_name)  # debug
+    return jsonify({KEY_ID: file_name})
+
+
+def load_encodings():
+    # find all encoding files
+    enc_files = []
+    for root, dirs, files in os.walk(ENC_FOLDER):
+        dirs.sort()
+        files.sort()
+        for file in files:
+            filename = os.path.join(root, file)
+
+            # check if file is right type
+            f_name, f_extension = os.path.splitext(filename)
+            if f_extension != ENC_FILE:
+                continue
+
+            enc_files.append(filename)
+
+    # read all encodings from them
     encodings = {}
-
-    enc_files = get_filelist(encoding_path, [ENC_FILE])
-
     for filename in enc_files:
         f = open(filename, "r")
         contents = f.read()
@@ -171,26 +183,17 @@ def load_encodings(encoding_path):
     return encodings
 
 
-def get_filelist(path, extensions):
-    filenames = []
-
-    for root, dirs, files in os.walk(path):
-        dirs.sort()
-        files.sort()
-        for file in files:
-            filename = os.path.join(root, file)
-
-            # check if file is right type
-            f_name, f_extension = os.path.splitext(filename)
-            if f_extension not in extensions:
-                continue
-
-            filenames.append(filename)
-
-    return filenames
+def remove_encoding(identifier):
+    enc_file = os.path.join(ENC_FOLDER, identifier + '.enc')
+    if os.path.exists(enc_file):
+        os.remove(enc_file)
+        return jsonify({KEY_ID: identifier})  # ok
+    else:
+        return jsonify({CONST_ERROR: 'File not found'})
 
 
 # -- ENTRY POINT -- #
+
 
 if __name__ == '__main__':
     if not os.path.exists(ENC_FOLDER):  # fix missing folders
