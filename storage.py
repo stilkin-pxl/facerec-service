@@ -12,11 +12,11 @@ import constants as const
 
 def store_encoding(identifier, encoding):
     file_name = base64.urlsafe_b64encode(identifier).decode('ascii')
-    enc_file = os.path.join(const.ENC_FOLDER, file_name + '.enc')
+    enc_file = os.path.join(const.ENC_FOLDER, file_name + const.ENC_FILE)
     fio = open(enc_file, "w")
     fio.write(json.dumps(encoding))
     fio.close()
-    print('encoding_id: ' + file_name)  # debug
+    print('identifier: ' + file_name)  # debug
     return {const.KEY_ID: file_name}
 
 
@@ -53,7 +53,7 @@ def load_encodings():
 
 
 def remove_encoding(identifier):
-    enc_file = os.path.join(const.ENC_FOLDER, identifier + '.enc')
+    enc_file = os.path.join(const.ENC_FOLDER, identifier + const.ENC_FILE)
     if os.path.exists(enc_file):
         os.remove(enc_file)
         return {const.KEY_ID: identifier}  # ok
