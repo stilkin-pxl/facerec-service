@@ -22,7 +22,7 @@ def add_face(io_stream):
             return check_face_count(face_count)
     except Exception as e:
         print('ERROR: ' + str(e))
-        return {const.ERROR_MSG: str(e)}
+        return {const.KEY_ERROR: str(e)}
 
 
 def predict(io_stream):
@@ -50,7 +50,7 @@ def predict(io_stream):
             return check_face_count(face_count)
     except Exception as e:
         print('ERROR: ' + str(e))
-        return {const.ERROR_MSG: str(e)}
+        return {const.KEY_ERROR: str(e)}
 
 
 def remove(identifier):
@@ -58,7 +58,7 @@ def remove(identifier):
         return storage.remove_encoding(identifier)
     except Exception as e:
         print('ERROR: ' + str(e))
-        return {const.ERROR_MSG: str(e)}
+        return {const.KEY_ERROR: str(e)}
 
 
 # -- UTILITY METHODS -- #
@@ -70,8 +70,8 @@ def get_encodings(io_stream):
 
 def check_face_count(face_count):
     if face_count < 1:
-        return {const.ERROR_MSG: 'Face not found'}
+        return {const.KEY_ERROR: 'Face not found'}
     elif face_count > 1:
-        return {const.ERROR_MSG: 'Too many faces in image'}
+        return {const.KEY_ERROR: 'Too many faces in image'}
     else:
         return {}

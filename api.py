@@ -35,7 +35,7 @@ def add_face_route():
     json_body = request.get_json()
 
     if const.KEY_IMG not in json_body:
-        return jsonify({const.ERROR_MSG: 'Incomplete request body'})
+        return jsonify({const.KEY_ERROR: 'Incomplete request body'})
 
     io_stream = string_to_stream(json_body[const.KEY_IMG])
 
@@ -48,7 +48,7 @@ def predict_route():
     json_body = request.get_json()
 
     if const.KEY_IMG not in json_body:
-        return jsonify({const.ERROR_MSG: 'Incomplete request body'})
+        return jsonify({const.KEY_ERROR: 'Incomplete request body'})
 
     io_stream = string_to_stream(json_body[const.KEY_IMG])
     return jsonify(func.predict(io_stream))
@@ -60,7 +60,7 @@ def remove_route():
     json_body = request.get_json()
 
     if const.KEY_ID not in json_body:
-        return jsonify({const.ERROR_MSG: 'Incomplete request body'})
+        return jsonify({const.KEY_ERROR: 'Incomplete request body'})
 
     identifier = json_body[const.KEY_ID]
     return jsonify(func.remove(identifier))

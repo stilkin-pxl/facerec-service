@@ -58,4 +58,4 @@ def remove_encoding(identifier):
         os.remove(enc_file)
         return {const.KEY_ID: identifier}  # ok
     else:
-        return {const.ERROR_MSG: 'File not found'}
+        return {const.KEY_ERROR: 'File not found'}
