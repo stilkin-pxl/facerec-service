@@ -3,24 +3,14 @@
 
 import base64
 import io
-import json
 import os
 import uuid
 
 import face_recognition
-import numpy as np
-from PIL import Image
 from flask import Flask, jsonify, request, send_from_directory
 
-# constants
-ENC_FOLDER = 'encodings'
-ENC_FILE = '.enc'
-CONST_ERROR = 'error'
-KEY_IMG = 'image'
-KEY_ID = 'identifier'
-ROUTE_ADD = '/api/add_face'
-ROUTE_PREDICT = '/api/predict'
-ROUTE_REMOVE = '/api/remove'
+import constants as const
+import storage
 
 app = Flask(__name__)
 
@@ -41,19 +31,19 @@ def favicon_route():
         mimetype='image/vnd.microsoft.icon')
 
 
-@app.route(ROUTE_ADD, methods=['POST'])
+@app.route(const.ROUTE_ADD, methods=['POST'])
 def add_face_route():
     print('adding face')  # debug
     return process_request(request)
 
 
-@app.route(ROUTE_PREDICT, methods=['POST'])
+@app.route(const.ROUTE_PREDICT, methods=['POST'])
 def predict_route():
     print('predicting face')  # debug
     return process_request(request)
 
 
-@app.route(ROUTE_REMOVE, methods=['POST'])
+@app.route(const.ROUTE_REMOVE, methods=['POST'])
 def remove_route():
     print('removing face')  # debug
     return remove(request)
@@ -66,47 +56,47 @@ def process_request(post_req):
     route = str(post_req.url_rule)
     json_body = post_req.get_json()
 
-    if KEY_IMG not in json_body:
-        return jsonify({CONST_ERROR: 'Incomplete request body'})
+    if const.KEY_IMG not in json_body:
+        return jsonify({const.ERROR_MSG: 'Incomplete request body'})
 
-    img_str = json_body[KEY_IMG]
+    img_str = json_body[const.KEY_IMG]
     try:
         img_bytes = base64.b64decode(str(img_str))
-        img = Image.open(io.BytesIO(img_bytes))
-        img = img.convert('RGB')
-        img_arr = np.array(img)
+        io_stream = io.BytesIO(img_bytes)
 
+        img_arr = face_recognition.load_image_file(io_stream)
         encodings = face_recognition.face_encodings(img_arr)
         face_count = len(encodings)
 
         if face_count < 1:
-            return jsonify({CONST_ERROR: 'Face not found'})
+            return jsonify({const.ERROR_MSG: 'Face not found'})
         elif face_count > 1:
-            return jsonify({CONST_ERROR: 'Too many faces in image'})
+            return jsonify({const.ERROR_MSG: 'Too many faces in image'})
         else:
-            if ROUTE_PREDICT is route:
+            if const.ROUTE_PREDICT is route:
                 return predict(encodings)
             else:
                 return add_face(encodings)
     except Exception as e:
         print('ERROR: ' + str(e))
-        return jsonify({CONST_ERROR: str(e)})
+        return jsonify({const.ERROR_MSG: str(e)})
 
 
 def add_face(encodings):
     try:
         encoding = encodings[0].tolist()
         identifier = str(uuid.uuid4()).encode('utf-8')
-        return store_encoding(identifier, encoding)
+        return storage.store_encoding(identifier, encoding)
     except Exception as e:
         print('ERROR: ' + str(e))
-        return jsonify({CONST_ERROR: str(e)})
+        return jsonify({const.ONST_ERROR: str(e)})
 
 
 def predict(encodings):
     try:
         unknown_face_encoding = encodings[0]
-        known_encodings = load_encodings()  # load encodings from file (/ db?)
+        known_encodings = storage.load_encodings()  # load encodings from file (/ db?)
+
         known_face_encodings = list(known_encodings.values())
         known_face_labels = list(known_encodings.keys())
         print('checking ' + str(len(known_face_labels)) + ' known faces')  # debug
@@ -115,89 +105,35 @@ def predict(encodings):
         ids = []
         for idx in range(len(results)):
             if results[idx]:
-                label = known_face_labels[idx].replace(ENC_FILE, '')
-                ids.append({KEY_ID: label})
+                label = known_face_labels[idx].replace(const.ENC_FILE, '')
+                ids.append({const.KEY_ID: label})
 
         return jsonify(ids)
     except Exception as e:
         print('ERROR: ' + str(e))
-        return jsonify({CONST_ERROR: str(e)})
+        return jsonify({const.ERROR_MSG: str(e)})
 
 
 def remove(post_req):
     json_body = post_req.get_json()
 
-    if KEY_ID not in json_body:
-        return jsonify({CONST_ERROR: 'Incomplete request body'})
+    if const.KEY_ID not in json_body:
+        return jsonify({const.ERROR_MSG: 'Incomplete request body'})
 
-    identifier = json_body[KEY_ID]
+    identifier = json_body[const.KEY_ID]
 
     try:
-        return remove_encoding(identifier)
+        return storage.remove_encoding(identifier)
     except Exception as e:
         print('ERROR: ' + str(e))
-        return jsonify({CONST_ERROR: str(e)})
-
-
-# -- IO METHODS -- #
-
-
-def store_encoding(identifier, encoding):
-    file_name = base64.urlsafe_b64encode(identifier).decode('ascii')
-    enc_file = os.path.join(ENC_FOLDER, file_name + '.enc')
-    fio = open(enc_file, "w")
-    fio.write(json.dumps(encoding))
-    fio.close()
-    print('encoding_id: ' + file_name)  # debug
-    return jsonify({KEY_ID: file_name})
-
-
-def load_encodings():
-    # find all encoding files
-    enc_files = []
-    for root, dirs, files in os.walk(ENC_FOLDER):
-        dirs.sort()
-        files.sort()
-        for file in files:
-            filename = os.path.join(root, file)
-
-            # check if file is right type
-            f_name, f_extension = os.path.splitext(filename)
-            if f_extension != ENC_FILE:
-                continue
-
-            enc_files.append(filename)
-
-    # read all encodings from them
-    encodings = {}
-    for filename in enc_files:
-        f = open(filename, "r")
-        contents = f.read()
-        f.close()
-
-        encoding = json.loads(contents)  # convert from string to array
-        encoding = np.array(encoding)  # convert to numpy array
-
-        short_name = os.path.basename(filename)  # remove extension?
-        encodings[short_name] = encoding
-
-    return encodings
-
-
-def remove_encoding(identifier):
-    enc_file = os.path.join(ENC_FOLDER, identifier + '.enc')
-    if os.path.exists(enc_file):
-        os.remove(enc_file)
-        return jsonify({KEY_ID: identifier})  # ok
-    else:
-        return jsonify({CONST_ERROR: 'File not found'})
+        return jsonify({const.ERROR_MSG: str(e)})
 
 
 # -- ENTRY POINT -- #
 
 
 if __name__ == '__main__':
-    if not os.path.exists(ENC_FOLDER):  # fix missing folders
-        os.makedirs(ENC_FOLDER)
+    if not os.path.exists(const.ENC_FOLDER):  # fix missing folders
+        os.makedirs(const.ENC_FOLDER)
     app.run(host='0.0.0.0', debug=True)
     # app.run(host='0.0.0.0', ssl_context='adhoc', port='443', debug=False) # for https
