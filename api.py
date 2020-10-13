@@ -20,6 +20,7 @@ KEY_IMG = 'image'
 KEY_ID = 'identifier'
 ROUTE_ADD = '/api/add_face'
 ROUTE_PREDICT = '/api/predict'
+ROUTE_REMOVE = '/api/remove'
 
 app = Flask(__name__)
 
@@ -46,13 +47,13 @@ def add_face_route():
     return process_request(request)
 
 
-@app.route('/api/predict', methods=['POST'])
+@app.route(ROUTE_PREDICT, methods=['POST'])
 def predict_route():
     print('predicting face')  # debug
     return process_request(request)
 
 
-@app.route('/api/remove', methods=['POST'])
+@app.route(ROUTE_REMOVE, methods=['POST'])
 def remove_route():
     print('removing face')  # debug
     return remove(request)
