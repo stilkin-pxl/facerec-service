@@ -23,6 +23,7 @@ ROUTE_PREDICT = '/api/predict'
 
 app = Flask(__name__)
 
+
 # -- ROUTES -- #
 
 
@@ -51,7 +52,13 @@ def predict_route():
     return process_request(request)
 
 
-# -- METHODS -- #
+@app.route('/api/remove', methods=['POST'])
+def remove():
+    print('removing face')  # debug
+    return remove_face(request)
+
+
+# -- FUNCTIONS -- #
 
 
 def process_request(post_req):
@@ -121,6 +128,28 @@ def predict(encodings):
     except Exception as e:
         print('ERROR: ' + str(e))
         return jsonify({CONST_ERROR: str(e)})
+
+
+def remove_face(post_req):
+    json_body = post_req.get_json()
+
+    if KEY_ID not in json_body:
+        return jsonify({CONST_ERROR: 'Incomplete request body'})
+
+    file_id = json_body[KEY_ID]
+
+    try:
+        enc_file = os.path.join(ENC_FOLDER, file_id + '.enc')
+        if os.path.exists(enc_file):
+            os.remove(enc_file)
+            return jsonify({KEY_ID: file_id})  # ok
+        else:
+            return jsonify({CONST_ERROR: 'File not found'})
+    except Exception as e:
+        print('ERROR: ' + str(e))
+        return jsonify({CONST_ERROR: str(e)})
+
+# -- UTILITY METHODS -- #
 
 
 def load_encodings(encoding_path):
